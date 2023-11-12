@@ -51,7 +51,7 @@ char v1,v2,v3,v4,v5,v6,v7,v8;
 
 void setup(){
 
-  // set harmonic frequencies
+  // set harmonic frequencies - change these?
   aSin1.setFreq(100);
   aSin2.setFreq(100);
   aSin3.setFreq(100);
@@ -61,7 +61,7 @@ void setup(){
   aSin7.setFreq(100);
   aSin8.setFreq(100);
 
-// set volume change frequencies
+// set volume change frequencies - change these?
   kVol1.setFreq(0.43f); // more of a pulse // change for pulsating while mute
   kVol2.setFreq(0.0245f);
   kVol3.setFreq(0.019f);
@@ -115,8 +115,8 @@ void updateControl() {
     }
   }
 
+  // This stuff handles the lava lamp
   int lavalamp = analogRead(A1);
-
   // Add the new reading to the array and increment the index
   lavalampReadings[readingIndex] = lavalamp;
   readingIndex = (readingIndex + 1) % SMOOTHING_WINDOW;
@@ -134,7 +134,7 @@ void updateControl() {
 
   Serial.print("Smoothed Lavalamp changed to ");
   Serial.println(mappedReading);
-
+  // Update the frequency like with the others ^
   aSin8.setFreq(mappedReading * 2);
 
   // Update volume values
