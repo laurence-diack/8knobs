@@ -6,7 +6,7 @@
 
 using namespace admux;
 
-#define CONTROL_RATE 128
+#define CONTROL_RATE 64
 #define DENOISE 16
 
 int16_t prevReadings[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -61,6 +61,8 @@ void setup(){
   v1=v2=v3=v4=v5=v6=v7=v8=127;
 
   Serial.begin();
+
+  setupFastAnalogRead();
   
   startMozzi(CONTROL_RATE);
 }
@@ -70,7 +72,8 @@ void loop(){
 }
 
 int16_t readMuxPin(int pin) {
-  return mux.read(pin);
+  mux.channel(pin);
+  return analogRead(A0);
 }
 
 void updateControl() {
