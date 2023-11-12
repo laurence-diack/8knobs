@@ -14,6 +14,7 @@ using namespace admux;
 
 #define CONTROL_RATE 64
 #define DENOISE 16 // this value is for filtering out random fluctuations from the knobs
+#define USE_LDR false // are we using an LDR connected to A1 ? make it true if so!
 
 #define SENSOR_MIN 100
 #define SENSOR_MAX 150
@@ -110,32 +111,39 @@ void updateControl() {
         case 4: aSin5.setFreq(currentReading * 2); break;
         case 5: aSin6.setFreq(currentReading * 2); break;
         case 6: aSin7.setFreq(currentReading * 2); break;
-        // case 7: aSin8.setFreq(currentReading * 2); break;
+        if (! USE_LDR)
+        {
+          case 7: aSin8.setFreq(currentReading * 2); break;
+        }
       }
     }
   }
 
-  // This stuff handles the lava lamp
-  int lavalamp = analogRead(A1);
-  // Add the new reading to the array and increment the index
-  lavalampReadings[readingIndex] = lavalamp;
-  readingIndex = (readingIndex + 1) % SMOOTHING_WINDOW;
+  if (USE_LDR)
+  {
+    // This stuff handles the lava lamp
+    int lavalamp = analogRead(A1);
+    // Add the new reading to the array and increment the index
+    lavalampReadings[readingIndex] = lavalamp;
+    readingIndex = (readingIndex + 1) % SMOOTHING_WINDOW;
 
-  // Calculate the average of the readings in the smoothing window
-  int sum = 0;
-  for (int i = 0; i < SMOOTHING_WINDOW; i++) {
-    sum += lavalampReadings[i];
+    // Calculate the average of the readings in the smoothing window
+    int sum = 0;
+    for (int i = 0; i < SMOOTHING_WINDOW; i++) {
+      sum += lavalampReadings[i];
+    }
+    int smoothedLavalamp = sum / SMOOTHING_WINDOW;
+
+    // Now apply constrainment and mapping to the smoothed value
+    int constrainedReading = constrain(smoothedLavalamp, SENSOR_MIN, SENSOR_MAX);
+    int mappedReading = map(constrainedReading, SENSOR_MIN, SENSOR_MAX, 0, 1023);
+
+    Serial.print("Smoothed Lavalamp changed to ");
+    Serial.println(mappedReading);
+    // Update the frequency like with the others ^
+    aSin8.setFreq(mappedReading * 2);
   }
-  int smoothedLavalamp = sum / SMOOTHING_WINDOW;
 
-  // Now apply constrainment and mapping to the smoothed value
-  int constrainedReading = constrain(smoothedLavalamp, SENSOR_MIN, SENSOR_MAX);
-  int mappedReading = map(constrainedReading, SENSOR_MIN, SENSOR_MAX, 0, 1023);
-
-  Serial.print("Smoothed Lavalamp changed to ");
-  Serial.println(mappedReading);
-  // Update the frequency like with the others ^
-  aSin8.setFreq(mappedReading * 2);
 
   // Update volume values
   v1 = kVol1.next();
