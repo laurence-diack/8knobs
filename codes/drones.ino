@@ -1,14 +1,17 @@
-/* 
-    8knobs Drones
-    Analog Inputs: A0-A5, A6 - A11 (on digital pins 4, 6, 8, 9, 10, and 12). 
-*/
-
-//#include <ADC.h>  // Teensy 3.1 uncomment this line and install http://github.com/pedvide/ADC
 #include <MozziGuts.h>
+#include <mozzi_utils.h>
 #include <Oscil.h>
 #include <tables/sin8192_int8.h>
+#include <Mux.h>
+
+using namespace admux;
 
 #define CONTROL_RATE 128
+#define DENOISE 16
+
+int16_t prevReadings[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+Mux mux(Pin(A0, INPUT, PinType::Analog), Pinset(7, 8, 9, 10));
 
 // harmonics
 Oscil<SIN8192_NUM_CELLS, AUDIO_RATE> aSin1(SIN8192_DATA);
@@ -56,6 +59,8 @@ void setup(){
   kVol8.setFreq(0.041f);
 
   v1=v2=v3=v4=v5=v6=v7=v8=127;
+
+  Serial.begin();
   
   startMozzi(CONTROL_RATE);
 }
@@ -64,24 +69,45 @@ void loop(){
   audioHook();
 }
 
+int16_t readMuxPin(int pin) {
+  return mux.read(pin);
+}
 
-void updateControl(){
-  aSin1.setFreq((mozziAnalogRead(A0))*8);
-  aSin2.setFreq((mozziAnalogRead(A1))*8);
-  aSin3.setFreq((mozziAnalogRead(A2))*8);
-  aSin4.setFreq((mozziAnalogRead(A3))*8);
-  aSin5.setFreq((mozziAnalogRead(A4))*8);
-  aSin6.setFreq((mozziAnalogRead(A5))*8);
-  aSin7.setFreq((mozziAnalogRead(A6))*8);
-  aSin8.setFreq((mozziAnalogRead(A7))*8);
-   v1 = kVol1.next(); // going at a higher freq, this creates zipper noise, so reduce the gain
-   v2 = kVol2.next();
-   v3 = kVol3.next();
-   v4 = kVol4.next();
-   v5 = kVol5.next();
-   v6 = kVol6.next();
-   v7 = kVol7.next();
-   v8 = kVol8.next();
+void updateControl() {
+  for (int i = 0; i < 8; i++) {
+    int16_t currentReading = readMuxPin(i);
+    // Check if the read value has changed more than the DENOISE threshold
+    if (abs(currentReading - prevReadings[i]) > DENOISE) {
+      prevReadings[i] = currentReading; // Update the previous reading
+      // Print the pin number and its new value
+      Serial.print("Pin ");
+      Serial.print(i);
+      Serial.print(" changed to ");
+      Serial.println(currentReading);
+
+      // Update the frequency based on the current reading
+      switch (i) {
+        case 0: aSin1.setFreq(currentReading * 8); break;
+        case 1: aSin2.setFreq(currentReading * 8); break;
+        case 2: aSin3.setFreq(currentReading * 8); break;
+        case 3: aSin4.setFreq(currentReading * 8); break;
+        case 4: aSin5.setFreq(currentReading * 8); break;
+        case 5: aSin6.setFreq(currentReading * 8); break;
+        case 6: aSin7.setFreq(currentReading * 8); break;
+        case 7: aSin8.setFreq(currentReading * 8); break;
+      }
+    }
+  }
+
+  // Update volume values
+  v1 = kVol1.next();
+  v2 = kVol2.next();
+  v3 = kVol3.next();
+  v4 = kVol4.next();
+  v5 = kVol5.next();
+  v6 = kVol6.next();
+  v7 = kVol7.next();
+  v8 = kVol8.next();
 }
 
 int updateAudio(){
