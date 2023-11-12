@@ -13,7 +13,7 @@ using namespace admux;
 // ReverbTank reverb;
 
 #define CONTROL_RATE 64
-#define DENOISE 16
+#define DENOISE 16 // this value is for filtering out random fluctuations from the knobs
 
 #define SENSOR_MIN 100
 #define SENSOR_MAX 150
@@ -160,6 +160,7 @@ int updateAudio(){
     aSin8.next()*v8;
   asig >>= 9;
 
+  // Reverb doesn't work :(
   // int arev = reverb.next(asig);
   // return MonoOutput::fromAlmostNBit(9, arev + (arev>>3));
   return (int) asig;
